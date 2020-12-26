@@ -82,7 +82,7 @@ class Datagram(object):
         self.SEQACK = int.from_bytes(data[5:9], "big")
         self.LEN = int.from_bytes(data[9:13], "big")
         self.CHECKSUM = int.from_bytes(data[13:15], "big")
-        self.PAYLOAD = data[17:]
+        self.PAYLOAD = data[15:]
 
 
 if __name__ == "__main__":
@@ -94,7 +94,6 @@ if __name__ == "__main__":
     a2 = segment(a, 8)
     for item in a2:
         print(item.packet)
-    for item in a2:
         dg.depack(item.packet)
         print(dg.SEQ)
         print(dg.PAYLOAD.decode())

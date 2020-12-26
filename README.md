@@ -1,1 +1,3 @@
 # rdt
+线程之间的数据传递，特别时recieve模块有问题
+#将receive里调用的函数改为将数据放进一个queue或一个list

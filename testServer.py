@@ -19,10 +19,7 @@ class Echo(threading.Thread):
             if data:
                 print(data)
                 self.conn.send(data)
-            else:
-                break
-        print(f'connection finished in {time.perf_counter() - start}s')
-        self.conn.close()
+#        print(f'connection finished in {time.perf_counter() - start}s')
 
 
 def main():

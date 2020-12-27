@@ -20,9 +20,10 @@ class Echo(threading.Thread):
                 print(data)
                 self.conn.send(data)
             else:
+                self.conn.send(b'')
                 break
         print(f'connection finished in {time.perf_counter() - start}s')
-        self.conn.close()
+
 
 
 def main():

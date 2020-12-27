@@ -1,10 +1,11 @@
 import USocket
+import datagram
+from Controller import Controller
 from USocket import UnreliableSocket
 import threading
 import time
-import queue as q
-
-port_cnt = 0
+import queue
+from datagram import Datagram
 
 
 class RDTSocket(UnreliableSocket):
@@ -27,10 +28,9 @@ class RDTSocket(UnreliableSocket):
         self._rate = rate
         self._send_to = None
         self._recv_from = None
-        self.send_buf = q.Queue()
-        self.recv_buf = q.PriorityQueue()
         self.debug = debug
-
+        self.data = bytes()
+        self.controller = Controller(self, self.data)
         #############################################################################
         # TODO: ADD YOUR NECESSARY ATTRIBUTES HERE
         #############################################################################
@@ -52,13 +52,10 @@ class RDTSocket(UnreliableSocket):
         #############################################################################
         # TODO: YOUR CODE HERE                                                      #
         #############################################################################
-        data, client_addr = self.recvfrom(2048)
-        if data == b'syn':
-            addr = client_addr
-            conn._send_to = addr
-            conn._recv_from = addr
-            conn.setblocking(flag=False)
-            conn.sendto(b'syn', addr)
+        addr = self.controller.recv_syn()
+        conn._send_to = addr
+        conn._recv_from = addr
+        conn.controller.send_syn_ack()
         #############################################################################
         #                             END OF YOUR CODE                              #
         #############################################################################
@@ -72,34 +69,34 @@ class RDTSocket(UnreliableSocket):
         #############################################################################
         # TODO: YOUR CODE HERE                                                      #
         #############################################################################
-        self.sendto(b'syn', address)
-        data, server_addr = self.recvfrom(2048)
+        self._send_to = address
+        self._recv_from = address
+        self.controller.send_syn()
+        server_addr = self.controller.recv_syn()
         self._send_to = server_addr
         self._recv_from = server_addr
-        print(data)
+        print("get_addr",server_addr)
 
-    #############################################################################
-    #                             END OF YOUR CODE                              #
-    #############################################################################
+        #############################################################################
+        #                             END OF YOUR CODE                              #
+        #############################################################################
 
     def recv(self, bufsize: int) -> bytes:
         """
-        Receive data from the socket. 
-        The return value is a bytes object representing the data received. 
-        The maximum amount of data to be received at once is specified by bufsize. 
-        
+        Receive data from the socket.
+        The return value is a bytes object representing the data wanting.
+        The maximum amount of data to be wanting at once is specified by bufsize.
+
         Note that ONLY data send by the peer should be accepted.
         In other words, if someone else sends data to you from another address,
         it MUST NOT affect the data returned by this function.
         """
-        data = None
+        data = b''
         assert self._recv_from, "Connection not established yet. Use recvfrom instead."
         #############################################################################
         # TODO: YOUR CODE HERE                                                      #
         #############################################################################
-        data, addr = self.recvfrom(bufsize)
-        if addr != self._recv_from:
-            return None
+        data=self.controller.recv_pack()
         #############################################################################
         #                             END OF YOUR CODE                              #
         #############################################################################
@@ -107,7 +104,7 @@ class RDTSocket(UnreliableSocket):
 
     def send(self, bytes: bytes):
         """
-        Send data to the socket. 
+        Send data to the socket.
         The socket must be connected to a remote socket, i.e. self._send_to must not be none.
         """
         assert self._send_to, "Connection not established yet. Use sendto instead."
@@ -127,10 +124,16 @@ class RDTSocket(UnreliableSocket):
         #############################################################################
         # TODO: YOUR CODE HERE                                                      #
         #############################################################################
-
+        self.send(b'')
         #############################################################################
         #                             END OF YOUR CODE                              #
         #############################################################################
         super().close()
 
+    @property
+    def send_to(self):
+        return self._send_to
 
+    @property
+    def recv_from(self):
+        return self._recv_from

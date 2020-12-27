@@ -32,7 +32,6 @@ class Controller:
         self.receiver = Receiver(self.socket, self.recv_buf).start()
 
     def ack_pack(self, ack):
-
         if self.to_ack <= ack + 1:
             while self.to_ack <= ack + 1 and self.tmp < len(self.send_list) \
                     and self.tmp - self.to_ack < self.window_size:  # to debug
@@ -71,7 +70,7 @@ class Controller:
         #     if datagram.SEQ > self.wanting + 1:
         #         self.recv_buf.put((datagram.SEQ, datagram.PAYLOAD))
 
-    def send(self, to_send: bytes):
+    def send(self, to_send: bytes):#有问题
         self.send_list.extend(datagram.segment(to_send, 256))
         while self.send_buf.qsize() < self.window_size and self.tmp < len(self.send_list):
             self.send_buf.put(self.send_list[self.tmp])

@@ -81,7 +81,7 @@ class RDTSocket(UnreliableSocket):
         #                             END OF YOUR CODE                              #
         #############################################################################
 
-    def recv(self, bufsize: int) -> bytes:
+    def recv(self, bufsize: int) -> bytes:#有问题
         """
         Receive data from the socket.
         The return value is a bytes object representing the data wanting.
@@ -102,7 +102,7 @@ class RDTSocket(UnreliableSocket):
         #############################################################################
         return data
 
-    def send(self, bytes: bytes):
+    def send(self, bytes: bytes):#有问题
         """
         Send data to the socket.
         The socket must be connected to a remote socket, i.e. self._send_to must not be none.

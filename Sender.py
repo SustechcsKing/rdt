@@ -14,7 +14,7 @@ class Sender(threading.Thread):  # to add arguments with priority
         self.acked = -1
         self.start_time = []
 
-    def run(self):
+    def run(self):#有问题
         while True:
             if self.to_send.empty() and self.ack_list.empty():
                 continue

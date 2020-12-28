@@ -75,13 +75,13 @@ class RDTSocket(UnreliableSocket):
         server_addr = self.controller.recv_syn()
         self._send_to = server_addr
         self._recv_from = server_addr
-        print("get_addr",server_addr)
+        print("get_addr", server_addr)
 
         #############################################################################
         #                             END OF YOUR CODE                              #
         #############################################################################
 
-    def recv(self, bufsize: int) -> bytes:#有问题
+    def recv(self, bufsize: int) -> bytes:  # 有问题
         """
         Receive data from the socket.
         The return value is a bytes object representing the data wanting.
@@ -96,13 +96,13 @@ class RDTSocket(UnreliableSocket):
         #############################################################################
         # TODO: YOUR CODE HERE                                                      #
         #############################################################################
-        data=self.controller.recv_pack()
+        data = self.controller.recv_pack()
         #############################################################################
         #                             END OF YOUR CODE                              #
         #############################################################################
         return data
 
-    def send(self, bytes: bytes):#有问题
+    def send(self, bytes: bytes):  # 有问题
         """
         Send data to the socket.
         The socket must be connected to a remote socket, i.e. self._send_to must not be none.
@@ -111,7 +111,7 @@ class RDTSocket(UnreliableSocket):
         #############################################################################
         # TODO: YOUR CODE HERE                                                      #
         #############################################################################
-        self.sendto(bytes, self._send_to)
+        self.controller.send(bytes)
         #############################################################################
         #                             END OF YOUR CODE                              #
         #############################################################################

@@ -7,7 +7,7 @@ def segment(data: bytes, slice_size: int, pre=0):
         fin = 0
         if i == 0:
             syn = 1
-        if i == len(slices):
+        if i == len(slices) - 1:
             fin = 1
         packet_list.append(Datagram(syn=syn, fin=fin, SEQ=pre + i, PAYLOAD=slice))
         i = i + 1

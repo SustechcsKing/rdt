@@ -18,6 +18,7 @@ class Controller:
         self.to_ack = 0
         self.tmp = 0
         self.duplicate = 0
+        self.used_seq = 0
 
         self.wanting = 0
 
@@ -25,7 +26,8 @@ class Controller:
         self.finish_receive = False
 
         self.nxt_ack = queue.Queue()
-        self.send_buf = queue.Queue()
+        self.send_buf = queue.PriorityQueue()
+        self.ack_list = queue.Queue()  # used to send ack to sender
         self.recv_buf = queue.Queue()
 
         self.sender = Sender(self.socket, self.send_buf, self.nxt_ack).start()
@@ -70,20 +72,23 @@ class Controller:
         #     if datagram.SEQ > self.wanting + 1:
         #         self.recv_buf.put((datagram.SEQ, datagram.PAYLOAD))
 
-    def send(self, to_send: bytes):#有问题
-        self.send_list.extend(datagram.segment(to_send, 256))
-        while self.send_buf.qsize() < self.window_size and self.tmp < len(self.send_list):
+    def send(self, to_send: bytes):  # 有问题
+        self.send_list.extend(datagram.segment(to_send, 256, pre=self.used_seq))
+        while self.send_buf.qsize() + self.to_ack < self.window_size and self.tmp < len(self.send_list):
             self.send_buf.put(self.send_list[self.tmp])
             self.tmp += 1
 
     def send_syn(self):
         self.send_list.append(Datagram(syn=1, type=1))
         self.send_buf.put(self.send_list[self.tmp])
+        self.tmp += 1
+        self.used_seq += 1
 
     def send_syn_ack(self):
         self.send_list.append(Datagram(syn=1, type=1, ack=1, SACK=0))
         self.send_buf.put(self.send_list[self.tmp])
         self.tmp += 1
+        self.used_seq += 1
 
     def recv_blocking(self):
         while True:

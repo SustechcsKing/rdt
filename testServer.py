@@ -16,13 +16,12 @@ class Echo(threading.Thread):
         start = time.perf_counter()
         while True:
             data = self.conn.recv(2048)
-            if data:
-                print(data)
-                self.conn.send(data)
-            else:
-                break
-        print(f'connection finished in {time.perf_counter() - start}s')
-        self.conn.close()
+            print("receive:", data)
+            print("send")
+            self.conn.send(data)
+
+
+#        print(f'connection finished in {time.perf_counter() - start}s')
 
 
 def main():

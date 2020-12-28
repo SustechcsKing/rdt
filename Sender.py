@@ -12,10 +12,11 @@ class Sender(threading.Thread):  # to add arguments with priority
         self.to_send = send_buf
         self.ack_list = ack_list  # ack 对方
         self.ack_recv = ack_recv  # ack received
+        self.last_ack = 0
         self.to_ack = []  # 自己等待ack的包
         self.window = [0]
         self.ack_index = 0
-        self.timeout = 0.5
+        self.timeout = 2
 
     def run(self):  # 有问题
         while True:
@@ -28,8 +29,11 @@ class Sender(threading.Thread):  # to add arguments with priority
                 self.to_ack.append((pack, time.time()))
             if not self.ack_list.empty():
                 seq = self.ack_list.get()
-                pack.set_ack(1)
-                pack.set_sack(seq)
+                self.last_ack = seq
+            else:
+                seq = self.last_ack
+            pack.set_ack(1)
+            pack.set_sack(seq)
 
             if self.ack_index < len(self.to_ack):  # timeout重传处理
                 while not self.ack_recv.empty():
@@ -37,16 +41,16 @@ class Sender(threading.Thread):  # to add arguments with priority
                     if ack >= self.ack_index:
                         self.ack_index = ack + 1
                         self.window[0] = len(self.to_ack) - self.ack_index + self.to_send.qsize()
-                if self.ack_index >= len(self.to_ack):
-                    continue
-                # pack, start_time = self.to_ack[self.ack_index]
-                # while time.time() - start_time > self.timeout:
-                #     self.to_send.put((pack.SEQ, pack))
-                #     self.ack_index += 1
-                #     if self.ack_index < len(self.to_ack):
-                #         pack, start_time = self.to_ack[self.ack_index]
-                #     else:
-                #         break
+                if self.ack_index < len(self.to_ack):
+                    pack, start_time = self.to_ack[self.ack_index]
+                    while time.time() - start_time > self.timeout:
+                        # print("retrans", time.time() - start_time, self.ack_index)
+                        self.to_send.put((pack.SEQ, pack))
+                        self.ack_index += 1
+                        if self.ack_index < len(self.to_ack):
+                            pack, start_time = self.to_ack[self.ack_index]
+                        else:
+                            break
 
             try:
                 self.socket.sendto(pack.packet, self.socket.send_to)

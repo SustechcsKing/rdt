@@ -1,5 +1,6 @@
 import time
 from difflib import Differ
+
 from rdt import RDTSocket
 
 server_addr = ('127.0.0.1', 2130)
@@ -8,9 +9,11 @@ server_addr = ('127.0.0.1', 2130)
 def main():
     socket = RDTSocket()
     socket.connect(server_addr)
+#    socket.send(b'hello')
+
     echo = b''
-    count = 5
-    slice_size = 1024
+    count = 1
+    slice_size = 8
     blocking_send = False
 
     with open('alice.txt', 'r') as f:
@@ -23,15 +26,17 @@ def main():
     mode A may be significantly slower when slice size is small
     '''
     if blocking_send:
-        print('transmit in mode A, send & recv in slices')
+        print('transmit in mode A, send & recv_buf in slices')
         slices = [encoded[i * slice_size:i * slice_size + slice_size] for i in range(len(encoded) // slice_size + 1)]
         assert sum([len(slice) for slice in slices]) == len(encoded)
 
         start = time.perf_counter()
         for i in range(count):  # send 'alice.txt' for count times
             for slice in slices:
-                socket.sendto(slice)
-                reply = socket.recv(slice_size)
+                print("send:",slice)
+                socket.send(slice)
+                reply = socket.recv(1024)
+                print("recv",reply)
                 echo += reply
     else:
         print('transmit in mode B')

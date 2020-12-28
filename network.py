@@ -24,7 +24,7 @@ class Server(ThreadingUDPServer):
     def verify_request(self, request, client_address):
         """
         request is a tuple (data, socket)
-        data is the received bytes object
+        data is the wanting bytes object
         socket is new socket created automatically to handle the request
 
         if this function returns False， the request will not be processed, i.e. is discarded.

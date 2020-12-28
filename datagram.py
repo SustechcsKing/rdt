@@ -1,6 +1,6 @@
 def segment(data: bytes, slice_size: int, pre=0):
     packet_list = []
-    slices = [data[i * slice_size:i * slice_size + slice_size] for i in range(len(data) + slice_size - 1 // slice_size)]
+    slices = [data[i * slice_size:i * slice_size + slice_size] for i in range((len(data) + slice_size - 1 )// slice_size)]
     i = 0
     for slice in slices:
         syn = 0

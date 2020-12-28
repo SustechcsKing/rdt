@@ -40,8 +40,10 @@ class Controller:
         self.send_packs()
 
     def send_packs(self):
+        print("w=", self.sender.window[0])
         while self.sender.window[0] < self.window_size and self.tmp < len(self.send_list):
             self.send_buf.put((self.send_list[self.tmp].SEQ, self.send_list[self.tmp]))
+            print('put', self.send_list[self.tmp].PAYLOAD)
             self.tmp += 1
             self.sender.window[0] += 1
 
@@ -78,17 +80,18 @@ class Controller:
 
     def send(self, to_send: bytes):  # 有问题
         self.send_list.extend(datagram.segment(to_send, 256, pre=self.used_seq))
-        self.used_seq += len(to_send) // 256 + 1
+        self.used_seq += (len(to_send) + 255) // 256
+        print("used_seq", self.used_seq)
         self.send_packs()
 
     def send_syn(self):
-        self.send_list.append(Datagram(syn=1, type=1))
+        self.send_list.append(Datagram(syn=1, type=1, SEQ = self.used_seq))
         self.send_buf.put((self.send_list[self.tmp].SEQ, self.send_list[self.tmp]))
         self.tmp += 1
         self.used_seq += 1
 
     def send_syn_ack(self):
-        self.send_list.append(Datagram(syn=1, type=1, ack=1, SACK=0))
+        self.send_list.append(Datagram(syn=1, type=1, ack=1, SACK=0, SEQ = self.used_seq))
         self.send_buf.put((self.send_list[self.tmp].SEQ, self.send_list[self.tmp]))
         self.tmp += 1
         self.used_seq += 1
@@ -100,16 +103,18 @@ class Controller:
                 print("Recv Pack")
                 if datagram.LEN != 0:
                     print("seq,data", datagram.SEQ, datagram.PAYLOAD)
-                if datagram.ACK != 0:
+                if datagram.ACK == 1:
                     print("sack", datagram.SACK)
                 if datagram.ACK == 1:
                     self.ack_pack(datagram.SACK)
 
-                if datagram.LEN != 0 or datagram.TYPE == 1:
-                    self.nxt_ack.put(self.wanting)
                 if datagram.SEQ < self.wanting:
                     continue
-                self.wanting = datagram.SEQ + 1
+
+                if datagram.LEN != 0 or datagram.TYPE == 1:
+                    self.nxt_ack.put(self.wanting)
+                    print("put_ack", self.wanting)
+                self.wanting = datagram.SEQ + 1  # Here is a problem
                 return addr, datagram
 
     def recv_syn(self):

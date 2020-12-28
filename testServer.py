@@ -16,8 +16,7 @@ class Echo(threading.Thread):
         start = time.perf_counter()
         while True:
             data = self.conn.recv(2048)
-            print("receive:", data)
-            print("send")
+            print("receive and send:", data)
             self.conn.send(data)
 
 

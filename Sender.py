@@ -12,7 +12,7 @@ class Sender(threading.Thread):  # to add arguments with priority
         self.to_send = send_buf
         self.ack_list = ack_list  # ack 对方
         self.ack_recv = ack_recv  # ack received
-        self.last_ack = 0
+        self.last_ack = -1
         self.to_ack = []  # 自己等待ack的包
         self.window = [0]
         self.ack_index = 0
@@ -26,14 +26,23 @@ class Sender(threading.Thread):  # to add arguments with priority
                 pack = Datagram()
             else:
                 seq, pack = self.to_send.get()
-                self.to_ack.append((pack, time.time()))
-            if not self.ack_list.empty():
-                seq = self.ack_list.get()
-                self.last_ack = seq
+                # self.to_ack.append((pack, time.time()))
+            ack = 0
+            if pack.ACK == 1:    # recv_syn()
+                sack = pack.SACK
+                self.last_ack = sack
+                ack = 1
+            elif not self.ack_list.empty():
+                sack = self.ack_list.get()
+                self.last_ack = sack
+                ack = 1
             else:
-                seq = self.last_ack
-            pack.set_ack(1)
-            pack.set_sack(seq)
+                if self.last_ack != -1:
+                    sack = self.last_ack
+                    ack = 1
+            if ack == 1:
+                pack.set_ack(1)
+                pack.set_sack(sack)
 
             if self.ack_index < len(self.to_ack):  # timeout重传处理
                 while not self.ack_recv.empty():

@@ -1,16 +1,15 @@
-def segment(data: str, slice_size: int):
-    encoded = data.encode()
+def segment(data: bytes, slice_size: int, pre=0):
     packet_list = []
-    slices = [encoded[i * slice_size:i * slice_size + slice_size] for i in range(len(encoded) // slice_size + 1)]
+    slices = [data[i * slice_size:i * slice_size + slice_size] for i in range(len(data) + slice_size - 1 // slice_size)]
     i = 0
     for slice in slices:
         syn = 0
         fin = 0
         if i == 0:
             syn = 1
-        if i == len(slices):
+        if i == len(slices) - 1:
             fin = 1
-        packet_list.append(Datagram(SYN=syn, FIN=fin, SEQ=i, PAYLOAD=slice))
+        packet_list.append(Datagram(syn=syn, fin=fin, SEQ=pre + i, PAYLOAD=slice))
         i = i + 1
 
     return packet_list
@@ -18,13 +17,13 @@ def segment(data: str, slice_size: int):
 
 class Datagram(object):
 
-    def __init__(self, SYN=0, FIN=0, ACK=0, TYPE=0, SEQ=0, SEQACK=0, MAX_LENGTH=1024, PAYLOAD=b''):
-        self.SYN = SYN
-        self.FIN = FIN
-        self.ACK = ACK
-        self.TYPE = TYPE  # Type is add to present whether the packet is a  syn or fin packet
+    def __init__(self, syn=0, fin=0, ack=0, type=0, SEQ=0, SACK=0, MAX_LENGTH=1024, PAYLOAD=b''):
+        self.SYN = syn
+        self.FIN = fin
+        self.ACK = ack
+        self.TYPE = type  # Type is add to present whether the datagram is a  syn or fin datagram
         self.SEQ = SEQ
-        self.SEQACK = SEQACK
+        self.SACK = SACK
         self.LEN = len(PAYLOAD)
         self.MAX_LENGTH = MAX_LENGTH
         self.PAYLOAD = PAYLOAD
@@ -34,17 +33,15 @@ class Datagram(object):
 
     def set_ack(self, ACK):
         self.ACK = ACK
-        self.packet[0:1] = int.to_bytes(self.TYPE * 8 + self.SYN * 4 + self.FIN * 2 + self.ACK * 1,
-                                        byteorder='big', length=1)
+        self.pack()
 
     def set_type(self, TYPE):
         self.TYPE = TYPE
-        self.packet[0:1] = int.to_bytes(self.TYPE * 8 + self.SYN * 4 + self.FIN * 2 + self.ACK * 1,
-                                        byteorder='big', length=1)
+        self.pack()
 
-    def set_seqack(self, SEQACK):
-        self.SEQACK = SEQACK
-        self.packet[5:9] = int.to_bytes(SEQACK, length=4, byteorder='big')
+    def set_sack(self, sack):
+        self.SACK = sack
+        self.pack()
 
     def checksum(self):
         # Input: data
@@ -58,10 +55,10 @@ class Datagram(object):
     def pack(self):
         # Input: a str with LEN length
         # Output: the package with header and data
-        send_data = int.to_bytes(self.TYPE * 8 + self.ACK * 4 + self.FIN * 2 + self.SYN * 1,
-                                 byteorder='big', length=1)
+        sum = self.TYPE * 8 + self.ACK * 4 + self.FIN * 2 + self.SYN * 1
+        send_data = int.to_bytes(sum, 1, 'big', signed=True)
         send_data = send_data + self.SEQ.to_bytes(4, "big")
-        send_data = send_data + self.SEQACK.to_bytes(4, "big")
+        send_data = send_data + self.SACK.to_bytes(4, "big")
         send_data = send_data + self.LEN.to_bytes(4, "big")
         send_data = send_data + self.CHECKSUM.to_bytes(2, "big")
         send_data = send_data + self.PAYLOAD
@@ -73,22 +70,15 @@ class Datagram(object):
         # The inf and header
         # header_list = []
         pre = int.from_bytes(data[0:1], "big")
+        self.SYN = pre % 2
+        pre //= 2
+        self.FIN = pre % 2
+        pre //= 2
+        self.ACK = pre % 2
+        pre //= 2
+        self.TYPE = pre
         self.SEQ = int.from_bytes(data[1:5], "big")
-        self.SEQACK = int.from_bytes(data[5:9], "big")
+        self.SACK = int.from_bytes(data[5:9], "big")
         self.LEN = int.from_bytes(data[9:13], "big")
         self.CHECKSUM = int.from_bytes(data[13:15], "big")
         self.PAYLOAD = data[15:]
-
-
-if __name__ == "__main__":
-    a = "1234512345123451234512"
-    b = 'iagsdgajsgadsda'
-    dg = Datagram(PAYLOAD=a.encode())
-    print(dg.packet)
-    a2 = segment(a, 8)
-    for item in a2:
-        print(item.packet)
-        dg.depack(item.packet)
-        print(dg.SEQ)
-        print(dg.PAYLOAD.decode())
-        print(dg.LEN)
